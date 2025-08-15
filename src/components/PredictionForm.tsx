@@ -341,7 +341,7 @@ export function PredictionForm({ onSubmit, currentPrice, userId, onEditPredictio
               <li>• <strong>Market Timing:</strong> Use AI insights to time your predictions</li>
             </ul>
           </div>
-        </div>
+         </div>
       </div>
     </div>
   );
