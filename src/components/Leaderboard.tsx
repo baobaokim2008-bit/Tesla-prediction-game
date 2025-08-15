@@ -91,207 +91,160 @@ export function Leaderboard({ currentUserId }: Props) {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-        <span className="ml-3 text-gray-300">Loading leaderboard...</span>
+      <div className="bg-white apple-card rounded-2xl p-6 border border-gray-200">
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          <span className="ml-3 text-gray-600 font-medium">Loading leaderboard...</span>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-center py-8 text-red-400">
-        <p>{error}</p>
-        <button
-          onClick={fetchLeaderboard}
-          className="mt-2 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          Try Again
-        </button>
+      <div className="bg-white apple-card rounded-2xl p-6 border border-gray-200">
+        <div className="text-center py-8">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={fetchLeaderboard}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors apple-button"
+          >
+            Try Again
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+    <div className="bg-white apple-card rounded-2xl p-6 border border-gray-200">
       <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-white">🏆 Leaderboard</h2>
-          <div className="text-xs text-gray-400 mt-1">
+        <h2 className="text-2xl font-semibold text-gray-900">Leaderboard</h2>
+        <div className="flex items-center space-x-4">
+          <span className="text-sm text-gray-500">
             Last updated: {lastRefresh.toLocaleTimeString()}
-          </div>
+          </span>
+          <button
+            onClick={fetchLeaderboard}
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors apple-button font-medium"
+          >
+            Refresh
+          </button>
         </div>
-        <button
-          onClick={fetchLeaderboard}
-          disabled={loading}
-          className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-        >
-          {loading ? 'Refreshing...' : 'Refresh'}
-        </button>
       </div>
 
       {/* Previous Week Winner */}
       {previousWeekWinner && (
-        <div className="mb-6 p-4 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 rounded-lg">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="text-2xl">👑</div>
+        <div className="mb-6 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl">
+          <h3 className="font-semibold text-yellow-900 mb-2">🏆 Previous Week Winner</h3>
+          <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-bold text-yellow-300">Previous Week Winner</h3>
-              <p className="text-sm text-yellow-200">
-                Week of {new Date(previousWeekWinner.prediction.weekStartDate).toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric'
-                })}
+              <p className="text-yellow-800 font-medium">{previousWeekWinner.username}</p>
+              <p className="text-sm text-yellow-700">
+                Score: {previousWeekWinner.score} points
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-sm text-yellow-700">
+                Prediction: ${previousWeekWinner.prediction.predictedMin?.toFixed(2) || previousWeekWinner.prediction.predictedPrice?.toFixed(2)} - ${previousWeekWinner.prediction.predictedMax?.toFixed(2) || previousWeekWinner.prediction.predictedPrice?.toFixed(2)}
+              </p>
+              <p className="text-sm text-yellow-700">
+                Actual: ${previousWeekWinner.prediction.actualPrice?.toFixed(2)}
               </p>
             </div>
           </div>
-          
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <div className="text-yellow-200 font-semibold">Winner</div>
-              <div className="text-white text-lg font-bold">{previousWeekWinner.username}</div>
-            </div>
-            <div>
-              <div className="text-yellow-200 font-semibold">Score</div>
-              <div className="text-white text-lg font-bold">{previousWeekWinner.score} pts</div>
-            </div>
-            <div>
-              <div className="text-yellow-200 font-semibold">Prediction</div>
-              <div className="text-white">
-                {previousWeekWinner.prediction.predictedMin !== undefined && previousWeekWinner.prediction.predictedMax !== undefined
-                  ? `$${previousWeekWinner.prediction.predictedMin.toFixed(2)} - $${previousWeekWinner.prediction.predictedMax.toFixed(2)}`
-                  : `$${previousWeekWinner.prediction.predictedPrice?.toFixed(2) || 'N/A'}`
-                }
-              </div>
-            </div>
-            <div>
-              <div className="text-yellow-200 font-semibold">Actual Price</div>
-              <div className="text-white">
-                ${previousWeekWinner.prediction.actualPrice?.toFixed(2) || 'N/A'}
-              </div>
-            </div>
-          </div>
         </div>
       )}
 
-      {leaderboardData.length === 0 ? (
-        <div className="text-center py-8 text-gray-400">
-          <p>No players yet. Make your first prediction to join the leaderboard!</p>
-        </div>
-      ) : (
-        <div className="space-y-3 max-h-96 overflow-y-auto">
-          {leaderboardData.map((user) => (
-            <div 
-              key={user._id} 
-              className={`bg-white/5 rounded-lg p-4 border border-white/10 transition-all ${
-                currentUserId === user._id ? 'ring-2 ring-blue-500 bg-blue-500/10' : ''
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className={`text-lg font-bold ${getRankColor(user.rank)}`}>
-                    {getRankIcon(user.rank)}
+      {/* Leaderboard Table */}
+      <div className="overflow-hidden rounded-xl border border-gray-200">
+        <table className="w-full">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Rank
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Player
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Score
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Accuracy
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Predictions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {leaderboardData.map((user, index) => (
+              <tr
+                key={user._id}
+                className={`${
+                  currentUserId === user._id ? 'bg-blue-50' : 'hover:bg-gray-50'
+                } transition-colors`}
+              >
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <span className={`text-lg font-semibold ${getRankColor(user.rank)}`}>
+                      {getRankIcon(user.rank)}
+                    </span>
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg font-semibold text-white">
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">
                         {user.username}
-                      </span>
-                      {currentUserId === user._id && (
-                        <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full">
-                          You
-                        </span>
-                      )}
+                        {currentUserId === user._id && (
+                          <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full font-medium">
+                            You
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {user.weeksActive} weeks active
+                      </div>
                     </div>
-                    <div className="text-xs text-gray-400">
-                      {user.predictionCount} predictions • {user.weeksActive} weeks active
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-semibold text-gray-900">
+                    {user.totalScore.toLocaleString()}
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    Avg: {user.averageScore.toFixed(1)}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <div className="text-sm font-semibold text-gray-900">
+                      {user.accuracy.toFixed(1)}%
+                    </div>
+                    <div className="ml-2 w-16 bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-green-600 h-2 rounded-full"
+                        style={{ width: `${user.accuracy}%` }}
+                      ></div>
                     </div>
                   </div>
-                </div>
-                
-                <div className="text-right">
-                  <div className="text-xl font-bold text-white">
-                    {user.totalScore} pts
-                  </div>
-                  <div className="text-xs text-gray-400">
-                    {user.accuracy.toFixed(1)}% accuracy
-                  </div>
-                  <div className="text-xs text-gray-400">
-                    Avg: {user.averageScore.toFixed(0)} pts
-                  </div>
-                </div>
-              </div>
-              
-              {/* Progress bar for accuracy */}
-              <div className="mt-3">
-                <div className="flex justify-between text-xs text-gray-400 mb-1">
-                  <span>Accuracy</span>
-                  <span>{user.correctPredictions}/{user.predictionCount} correct</span>
-                </div>
-                <div className="w-full bg-white/10 rounded-full h-2">
-                  <div 
-                    className="bg-green-500 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${user.accuracy}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-          ))}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {user.correctPredictions}/{user.predictionCount}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {leaderboardData.length === 0 && (
+        <div className="text-center py-8">
+          <p className="text-gray-500">No leaderboard data available yet.</p>
         </div>
       )}
-
-      <div className="mt-4 p-4 bg-blue-500/20 border border-blue-500/30 rounded-lg">
-        <h4 className="text-sm font-semibold text-blue-300 mb-3">🏆 Scoring System</h4>
-        <div className="text-xs text-blue-200 space-y-3">
-          <div>
-            <p className="font-semibold text-blue-100 mb-1">📊 Base Points:</p>
-            <ul className="ml-2 space-y-1">
-              <li>• 1 point for participation</li>
-              <li>• +10 points for correct prediction</li>
-              <li>• +30 points for narrowest range (among correct predictions)</li>
-            </ul>
-          </div>
-          
-          <div>
-            <p className="font-semibold text-blue-100 mb-1">⏰ Day Multipliers:</p>
-            <div className="grid grid-cols-2 gap-1 text-xs">
-              <div className="bg-green-500/20 p-1 rounded text-center">
-                <p className="font-semibold">Monday: 5×</p>
-              </div>
-              <div className="bg-yellow-500/20 p-1 rounded text-center">
-                <p className="font-semibold">Tuesday: 3×</p>
-              </div>
-              <div className="bg-orange-500/20 p-1 rounded text-center">
-                <p className="font-semibold">Wednesday: 2×</p>
-              </div>
-              <div className="bg-red-500/20 p-1 rounded text-center">
-                <p className="font-semibold">Thursday: 1×</p>
-              </div>
-            </div>
-          </div>
-          
-          <div>
-            <p className="font-semibold text-blue-100 mb-1">🎯 Final Score:</p>
-            <p className="bg-blue-500/30 p-2 rounded text-center font-semibold">
-              (Base + Bonus) × Day Multiplier
-            </p>
-          </div>
-          
-          <div className="bg-yellow-500/20 p-2 rounded border border-yellow-500/30">
-            <p className="text-yellow-200 font-semibold text-xs mb-1">💡 Example:</p>
-            <p className="text-yellow-100 text-xs">
-              Monday prediction, correct, narrowest range:<br/>
-              (1 + 10 + 30) × 5 = <strong>205 points</strong>
-            </p>
-          </div>
-        </div>
-      </div>
-      <div className="text-center py-4 text-gray-400">
-        <div className="text-sm">
-          {leaderboardData.length} players
-        </div>
-      </div>
     </div>
   );
 }

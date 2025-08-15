@@ -1,15 +1,16 @@
-// src/app/page.tsx - Complete updated version
+// Tesla Prediction Game - Main Application Page
+// Updated with Apple-inspired design and X login functionality
 'use client';
 
+import { useState, useEffect } from 'react';
+import { useSession, signOut } from 'next-auth/react';
+import { StockDataDisplay } from '@/components/StockDataDisplay';
 import { PredictionForm } from '@/components/PredictionForm';
 import { PredictionHistory } from '@/components/PredictionHistory';
 import { PredictionDashboard } from '@/components/PredictionDashboard';
 import { Leaderboard } from '@/components/Leaderboard';
 import { MarketCatalysts } from '@/components/MarketCatalysts';
-import { StockDataDisplay } from '@/components/StockDataDisplay';
 import { EnhancedLoginForm } from '@/components/EnhancedLoginForm';
-import { useState, useEffect } from 'react';
-import { useSession, signOut } from 'next-auth/react';
 
 export default function Home() {
   const { data: session, status } = useSession();
@@ -19,58 +20,42 @@ export default function Home() {
   const [stockData, setStockData] = useState<any>(null);
   const [predictions, setPredictions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshingCatalysts, setRefreshingCatalysts] = useState(false);
 
   useEffect(() => {
-    // Handle NextAuth session
-    if (status === 'loading') return; // Still loading
-    
+    // Check for existing session or guest login
     if (session?.user) {
-      // User signed in with X
-      setUserId(session.user.id!);
+      setUserId(session.user.id);
       setUsername(session.user.username || session.user.name || 'X User');
     } else {
-      // Check for guest login
-      const savedUserId = localStorage.getItem('tesla_user_id');
-      const savedUsername = localStorage.getItem('tesla_username');
-      
-      if (savedUserId && savedUsername) {
-        setUserId(savedUserId);
-        setUsername(savedUsername);
+      // Check for guest login in localStorage
+      const guestData = localStorage.getItem('guestUser');
+      if (guestData) {
+        const { userId: guestUserId, username: guestUsername } = JSON.parse(guestData);
+        setUserId(guestUserId);
+        setUsername(guestUsername);
       }
     }
-    
-    fetchStockData();
-  }, [session, status]);
+    setLoading(false);
+  }, [session]);
 
   useEffect(() => {
     if (userId) {
+      fetchStockData();
       fetchUserPredictions();
     }
   }, [userId]);
 
-  const fetchStockData = async (isRefresh = false) => {
-    if (isRefresh) {
-      setRefreshingCatalysts(true);
-    }
-    
+  const fetchStockData = async () => {
     try {
-      const url = isRefresh ? '/api/stock?refresh=true' : '/api/stock';
-      const response = await fetch(url);
+      const response = await fetch('/api/stock');
       const data = await response.json();
       
       if (data.success) {
         setCurrentPrice(data.data.currentPrice);
-        setStockData(data);
-        console.log('Market Context Data:', data.data.marketContext);
+        setStockData(data.data);
       }
     } catch (error) {
       console.error('Error fetching stock data:', error);
-    } finally {
-      setLoading(false);
-      if (isRefresh) {
-        setRefreshingCatalysts(false);
-      }
     }
   };
 
@@ -87,32 +72,6 @@ export default function Home() {
     } catch (error) {
       console.error('Error fetching predictions:', error);
     }
-  };
-
-  const handleLogin = (newUserId: string, newUsername: string) => {
-    setUserId(newUserId);
-    setUsername(newUsername);
-    
-    // Save guest login data
-    if (newUserId.startsWith('guest_')) {
-      localStorage.setItem('tesla_user_id', newUserId);
-      localStorage.setItem('tesla_username', newUsername);
-    }
-  };
-
-  const handleLogout = async () => {
-    if (session) {
-      // Sign out from NextAuth (X login)
-      await signOut({ redirect: false });
-    } else {
-      // Clear guest login
-      localStorage.removeItem('tesla_user_id');
-      localStorage.removeItem('tesla_username');
-    }
-    
-    setUserId(null);
-    setUsername(null);
-    setPredictions([]);
   };
 
   const handlePredictionSubmit = async (predictedRange: { min: number; max: number }) => {
@@ -174,22 +133,35 @@ export default function Home() {
     }
   };
 
-  const shareToX = async (prediction: any) => {
-    const text = `🚀 Just predicted Tesla stock to be between $${prediction.predictedMin} - $${prediction.predictedMax} this week! Join the Tesla Prediction Game and compete with me! #Tesla #StockPrediction`;
-    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
-    window.open(url, '_blank');
+  const handleLogin = (newUserId: string, newUsername: string) => {
+    setUserId(newUserId);
+    setUsername(newUsername);
+    
+    // Store guest data in localStorage
+    if (newUserId.startsWith('guest_')) {
+      localStorage.setItem('guestUser', JSON.stringify({
+        userId: newUserId,
+        username: newUsername
+      }));
+    }
+  };
+
+  const handleLogout = () => {
+    setUserId(null);
+    setUsername(null);
+    setPredictions([]);
+    localStorage.removeItem('guestUser');
+    if (session) {
+      signOut({ callbackUrl: '/' });
+    }
   };
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        </div>
-        <div className="relative z-10 text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-500 mx-auto mb-4"></div>
-          <p className="text-purple-200 text-lg">Loading Tesla Prediction Game...</p>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading Tesla Prediction Game...</p>
         </div>
       </div>
     );
@@ -200,85 +172,71 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      <header className="relative bg-white/10 backdrop-blur-md border-b border-white/20 shadow-2xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-4">
-              <div className="bg-gradient-to-r from-red-500 to-purple-600 p-3 rounded-xl shadow-lg">
-                <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                </svg>
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
-                  Tesla Prediction Game
-                </h1>
-                <div className="flex items-center space-x-2">
-                  <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-                  <p className="text-sm text-purple-200">
-                    Welcome, {username}!
-                    {session && (
-                      <span className="ml-2 px-2 py-1 bg-blue-600/80 text-white text-xs rounded-full">
-                        X User
-                      </span>
-                    )}
-                  </p>
-                </div>
-              </div>
+    <div className="min-h-screen bg-white">
+      {/* Header */}
+      <header className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-4 shadow-lg">
+        <div className="flex items-center justify-between max-w-7xl mx-auto">
+          <div className="flex items-center space-x-3">
+            <div className="bg-white/20 p-2 rounded-lg">
+              <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+              </svg>
             </div>
-            <button 
-              onClick={handleLogout} 
-              className="flex items-center space-x-2 px-4 py-2 bg-red-600/80 backdrop-blur-sm text-white rounded-lg hover:bg-red-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+            <div>
+              <h1 className="text-2xl font-bold">Tesla Prediction Game</h1>
+              <p className="text-sm opacity-90">Welcome, {username}!</p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-4">
+            {session && (
+              <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">
+                X User
+              </span>
+            )}
+            <button
+              onClick={handleLogout}
+              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors apple-button"
             >
-              <span>Logout</span>
+              Logout
             </button>
           </div>
         </div>
       </header>
 
-      <main className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Animated Background Elements */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Stock Data */}
+          <div className="lg:col-span-1">
+            <StockDataDisplay stockData={stockData} />
+          </div>
+
+          {/* Prediction Form */}
+          <div className="lg:col-span-1">
+            <PredictionForm 
+              onSubmit={handlePredictionSubmit}
+              currentPrice={currentPrice}
+              userId={userId}
+              onEditPrediction={handleEditPrediction}
+            />
+          </div>
         </div>
 
-        <div className="relative z-10 space-y-8">
-          {/* Stock Data Display */}
-          <StockDataDisplay 
-            stockData={stockData?.data} 
-          />
+        {/* Market Analysis */}
+        <MarketCatalysts marketContext={stockData?.marketContext} />
 
-          {/* Market Catalysts - Moved to top for decision-making */}
-          <MarketCatalysts 
-            marketContext={stockData?.data?.marketContext}
-            isLoading={refreshingCatalysts}
-          />
+        {/* Prediction History */}
+        <PredictionHistory 
+          predictions={predictions}
+          currentPrice={currentPrice}
+          onEditPrediction={handleEditPrediction}
+        />
 
-          {/* Prediction Form - After reading analysis */}
-          <PredictionForm 
-            currentPrice={currentPrice}
-            onSubmit={handlePredictionSubmit}
-            userId={userId}
-            onEditPrediction={handleEditPrediction}
-          />
+        {/* Community Dashboard */}
+        <PredictionDashboard currentPrice={currentPrice} />
 
-          {/* Prediction History */}
-          <PredictionHistory 
-            predictions={predictions}
-            currentPrice={currentPrice}
-            onEditPrediction={handleEditPrediction}
-          />
-
-          {/* Prediction Dashboard */}
-          <PredictionDashboard 
-            currentPrice={currentPrice}
-          />
-
-          {/* Leaderboard */}
-          <Leaderboard currentUserId={userId} />
-        </div>
+        {/* Leaderboard */}
+        <Leaderboard />
       </main>
     </div>
   );

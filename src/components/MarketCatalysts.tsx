@@ -88,12 +88,12 @@ export function MarketCatalysts({ marketContext, isLoading = false }: Props) {
 
   if (isLoading) {
     return (
-      <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+      <div className="bg-white apple-card rounded-2xl p-6 border border-gray-200">
         <div className="animate-pulse">
-          <div className="h-6 bg-white/20 rounded mb-4"></div>
+          <div className="h-6 bg-gray-200 rounded mb-4"></div>
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-4 bg-white/10 rounded"></div>
+              <div key={i} className="h-4 bg-gray-100 rounded"></div>
             ))}
           </div>
         </div>
@@ -101,223 +101,216 @@ export function MarketCatalysts({ marketContext, isLoading = false }: Props) {
     );
   }
 
-  const showNewsTab = marketContext.newsArticles && marketContext.newsArticles.length > 0;
+  if (!marketContext) {
+    return (
+      <div className="bg-white apple-card rounded-2xl p-6 border border-gray-200">
+        <h2 className="text-2xl font-semibold text-gray-900 mb-4">Market Analysis</h2>
+        <p className="text-gray-500">No market data available at the moment.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Grok AI Analysis Summary */}
-      {marketContext.grokAnalysis && (
-        <div className="bg-gradient-to-r from-purple-600/20 to-blue-600/20 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-          <div className="flex items-center space-x-2 mb-4">
-            <span className="text-2xl">🤖</span>
-            <h3 className="text-xl font-bold text-white">Grok AI Analysis</h3>
-            <span className="text-sm bg-white/20 px-2 py-1 rounded text-purple-200">
-              {marketContext.grokAnalysis.confidence}% confidence
-            </span>
-          </div>
-          <p className="text-purple-100 mb-3">{marketContext.grokAnalysis.summary}</p>
-          <div className="bg-white/10 rounded-lg p-3">
-            <span className="text-sm font-semibold text-purple-200">Recommendation: </span>
-            <span className="text-white">{marketContext.grokAnalysis.recommendation}</span>
-          </div>
-        </div>
-      )}
+    <div className="bg-white apple-card rounded-2xl p-6 border border-gray-200">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-semibold text-gray-900">Market Analysis</h2>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors apple-button font-medium"
+        >
+          Refresh Analysis
+        </button>
+      </div>
 
       {/* Tab Navigation */}
-      <div className="flex space-x-1 bg-white/5 rounded-lg p-1">
+      <div className="flex space-x-1 mb-6 bg-gray-100 rounded-lg p-1">
         {[
           { id: 'catalysts', label: 'Catalysts', icon: '⚡' },
-          { id: 'analysis', label: 'Market Analysis', icon: '📊' },
-          { id: 'technical', label: 'Technical', icon: '📈' },
-          ...(showNewsTab
-            ? [{ id: 'news', label: `News (${marketContext.newsArticles!.length})`, icon: '📰' }]
-            : [])
+          { id: 'analysis', label: 'AI Analysis', icon: '🤖' },
+          { id: 'technical', label: 'Technical', icon: '📊' },
+          { id: 'news', label: 'News', icon: '📰' }
         ].map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className={`flex-1 flex items-center justify-center space-x-2 py-2 px-3 rounded-md text-sm font-medium transition-all ${
+            className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
               activeTab === tab.id
-                ? 'bg-white/20 text-white'
-                : 'text-purple-200 hover:text-white hover:bg-white/10'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
             }`}
           >
-            <span>{tab.icon}</span>
-            <span>{tab.label}</span>
+            <span className="mr-1">{tab.icon}</span>
+            {tab.label}
           </button>
         ))}
       </div>
 
       {/* Tab Content */}
-      {activeTab === 'catalysts' && (
-        <div className="space-y-4">
-          {marketContext.catalysts && marketContext.catalysts.length > 0 ? (
-            marketContext.catalysts.map((catalyst, index) => (
-              <div
-                key={index}
-                className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-200"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <span className="text-lg">{getImpactIcon(catalyst.type)}</span>
-                      <span className={`inline-block w-3 h-3 rounded-full ${getImpactColor(catalyst.impact)}`}></span>
-                      <h4 className="font-semibold text-white">{catalyst.title}</h4>
-                      <span className="text-xs bg-white/20 px-2 py-1 rounded text-purple-200">
-                        {catalyst.confidence}% confidence
-                      </span>
+      <div className="space-y-4">
+        {activeTab === 'catalysts' && (
+          <div>
+            {marketContext.catalysts && marketContext.catalysts.length > 0 ? (
+              <div className="space-y-4">
+                {marketContext.catalysts.map((catalyst, index) => (
+                  <div
+                    key={index}
+                    className={`p-4 rounded-xl border ${
+                      catalyst.type === 'positive' 
+                        ? 'bg-green-50 border-green-200' 
+                        : 'bg-red-50 border-red-200'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-lg">{getImpactIcon(catalyst.type)}</span>
+                        <h3 className="font-semibold text-gray-900">{catalyst.title}</h3>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          catalyst.impact === 'high' ? 'bg-red-100 text-red-700' :
+                          catalyst.impact === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-green-100 text-green-700'
+                        }`}>
+                          {catalyst.impact} impact
+                        </span>
+                      </div>
+                      <span className="text-xs text-gray-500">{formatTimeAgo(catalyst.timestamp)}</span>
                     </div>
-                    <p className="text-sm text-purple-200 mb-2">{catalyst.description}</p>
-                    <div className="flex items-center space-x-4 text-xs text-purple-300">
-                      <span>Impact: {catalyst.impact}</span>
-                      <span>•</span>
-                      <span>Timeframe: {catalyst.timeframe}</span>
-                      {catalyst.priceTarget && (
-                        <>
-                          <span>•</span>
-                          <span>Target: ${catalyst.priceTarget.min}-${catalyst.priceTarget.max}</span>
-                        </>
+                    
+                    <p className="text-gray-700 mt-2">{catalyst.description}</p>
+                    
+                    {catalyst.priceTarget && (
+                      <div className="mt-3 p-3 bg-white rounded-lg border border-gray-200">
+                        <p className="text-sm font-medium text-gray-900 mb-1">Price Target</p>
+                        <p className="text-lg font-semibold text-gray-900">
+                          ${catalyst.priceTarget.min.toFixed(2)} - ${catalyst.priceTarget.max.toFixed(2)}
+                        </p>
+                      </div>
+                    )}
+                    
+                    <div className="mt-3 flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs text-gray-500">Confidence:</span>
+                        <div className="w-16 bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-blue-600 h-2 rounded-full" 
+                            style={{ width: `${catalyst.confidence}%` }}
+                          ></div>
+                        </div>
+                        <span className="text-xs text-gray-500">{catalyst.confidence}%</span>
+                      </div>
+                      <span className="text-xs text-gray-500">{catalyst.timeframe}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-center py-8">No catalysts identified at this time.</p>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'analysis' && (
+          <div>
+            {marketContext.grokAnalysis ? (
+              <div className="space-y-4">
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                  <h3 className="font-semibold text-blue-900 mb-2">AI Summary</h3>
+                  <p className="text-blue-800">{marketContext.grokAnalysis.summary}</p>
+                </div>
+                
+                <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
+                  <h3 className="font-semibold text-green-900 mb-2">Recommendation</h3>
+                  <p className="text-green-800">{marketContext.grokAnalysis.recommendation}</p>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-600">AI Confidence:</span>
+                  <div className="w-24 bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-green-600 h-2 rounded-full" 
+                      style={{ width: `${marketContext.grokAnalysis.confidence}%` }}
+                    ></div>
+                  </div>
+                  <span className="text-sm text-gray-600">{marketContext.grokAnalysis.confidence}%</span>
+                </div>
+              </div>
+            ) : (
+              <p className="text-gray-500 text-center py-8">AI analysis not available.</p>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'technical' && (
+          <div>
+            {marketContext.technicalAnalysis ? (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
+                  <h3 className="font-semibold text-gray-900 mb-2">Trend</h3>
+                  <p className="text-gray-700">{marketContext.technicalAnalysis.trend}</p>
+                </div>
+                
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
+                  <h3 className="font-semibold text-gray-900 mb-2">Momentum</h3>
+                  <p className="text-gray-700">{marketContext.technicalAnalysis.momentum}</p>
+                </div>
+                
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
+                  <h3 className="font-semibold text-gray-900 mb-2">Support</h3>
+                  <p className="text-2xl font-bold text-green-600">${marketContext.technicalAnalysis.support}</p>
+                </div>
+                
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
+                  <h3 className="font-semibold text-gray-900 mb-2">Resistance</h3>
+                  <p className="text-2xl font-bold text-red-600">${marketContext.technicalAnalysis.resistance}</p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-gray-500 text-center py-8">Technical analysis not available.</p>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'news' && (
+          <div>
+            {marketContext.newsArticles && marketContext.newsArticles.length > 0 ? (
+              <div className="space-y-4">
+                {marketContext.newsArticles.slice(0, 5).map((article, index) => (
+                  <div key={index} className="p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900 mb-1">{article.title}</h3>
+                        <p className="text-gray-600 text-sm mb-2">{article.description}</p>
+                        <div className="flex items-center space-x-4 text-xs text-gray-500">
+                          <span>{article.source}</span>
+                          <span>{formatTimeAgo(article.publishedAt)}</span>
+                          <span className={`px-2 py-1 rounded-full ${
+                            article.sentiment === 'bullish' ? 'bg-green-100 text-green-700' :
+                            article.sentiment === 'bearish' ? 'bg-red-100 text-red-700' :
+                            'bg-gray-100 text-gray-700'
+                          }`}>
+                            {article.sentiment}
+                          </span>
+                        </div>
+                      </div>
+                      {article.url && (
+                        <a
+                          href={article.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-4 px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                          Read
+                        </a>
                       )}
                     </div>
                   </div>
-                  <button
-                    onClick={() => setExpandedCatalyst(expandedCatalyst === `${index}` ? null : `${index}`)}
-                    className="ml-4 text-purple-300 hover:text-white transition-colors"
-                  >
-                    <svg className={`h-5 w-5 transform transition-transform ${expandedCatalyst === `${index}` ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-                </div>
-
-                {expandedCatalyst === `${index}` && (
-                  <div className="mt-3 pt-3 border-t border-white/10">
-                    <div className="text-xs text-purple-300 space-y-1">
-                      <div><strong>Sources:</strong> {catalyst.sources.join(', ')}</div>
-                      <div><strong>Published:</strong> {formatTimeAgo(catalyst.timestamp)}</div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))
-          ) : (
-            <div className="text-center py-8 text-purple-300">
-              <span className="text-4xl mb-4 block">📊</span>
-              <p>No market catalysts available at the moment.</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {activeTab === 'analysis' && marketContext.marketAnalysis && (
-        <div className="space-y-4">
-          <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
-            <h4 className="font-semibold text-white mb-2 flex items-center">
-              <span className="mr-2">🎯</span>Overall Sentiment
-            </h4>
-            <p className="text-purple-200">{marketContext.marketAnalysis.overallSentiment}</p>
-          </div>
-
-          <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
-            <h4 className="font-semibold text-white mb-2 flex items-center">
-              <span className="mr-2">📅</span>Weekly Outlook
-            </h4>
-            <p className="text-purple-200">{marketContext.marketAnalysis.weeklyOutlook}</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
-              <h4 className="font-semibold text-white mb-2 flex items-center">
-                <span className="mr-2">⚠️</span>Key Risks
-              </h4>
-              <ul className="space-y-1">
-                {marketContext.marketAnalysis.keyRisks.map((risk, index) => (
-                  <li key={index} className="text-sm text-purple-200">• {risk}</li>
                 ))}
-              </ul>
-            </div>
-
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
-              <h4 className="font-semibold text-white mb-2 flex items-center">
-                <span className="mr-2">🚀</span>Opportunities
-              </h4>
-              <ul className="space-y-1">
-                {marketContext.marketAnalysis.opportunities.map((opportunity, index) => (
-                  <li key={index} className="text-sm text-purple-200">• {opportunity}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'technical' && marketContext.technicalAnalysis && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
-              <h4 className="font-semibold text-white mb-2 flex items-center">
-                <span className="mr-2">📈</span>Trend Analysis
-              </h4>
-              <p className="text-purple-200">{marketContext.technicalAnalysis.trend}</p>
-            </div>
-
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
-              <h4 className="font-semibold text-white mb-2 flex items-center">
-                <span className="mr-2">⚡</span>Momentum
-              </h4>
-              <p className="text-purple-200">{marketContext.technicalAnalysis.momentum}</p>
-            </div>
-          </div>
-
-          <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
-            <h4 className="font-semibold text-white mb-2 flex items-center">
-              <span className="mr-2">🎯</span>Key Levels
-            </h4>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <span className="text-sm text-purple-300">Support: </span>
-                <span className="text-white font-semibold">${marketContext.technicalAnalysis.support}</span>
               </div>
-              <div>
-                <span className="text-sm text-purple-300">Resistance: </span>
-                <span className="text-white font-semibold">${marketContext.technicalAnalysis.resistance}</span>
-              </div>
-            </div>
+            ) : (
+              <p className="text-gray-500 text-center py-8">No news articles available.</p>
+            )}
           </div>
-        </div>
-      )}
-
-      {activeTab === 'news' && showNewsTab && (
-        <div className="space-y-3">
-          {marketContext.newsArticles!.map((article, index) => (
-            <a
-              key={index}
-              href={article.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-200"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <span className={`inline-block w-3 h-3 rounded-full ${getImpactColor(article.sentiment)}`}></span>
-                    <h4 className="font-semibold text-white">{article.title}</h4>
-                  </div>
-                  <p className="text-sm text-purple-200 mb-2">{article.description}</p>
-                  <div className="flex items-center space-x-2 text-xs text-purple-300">
-                    <span>{article.source}</span>
-                    <span>•</span>
-                    <span>{formatTimeAgo(article.publishedAt)}</span>
-                  </div>
-                </div>
-                <svg className="h-5 w-5 text-purple-300 ml-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-              </div>
-            </a>
-          ))}
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

@@ -1,72 +1,42 @@
-// src/app/api/auth/[...nextauth]/route.ts
 import NextAuth, { NextAuthOptions } from 'next-auth';
 import TwitterProvider from 'next-auth/providers/twitter';
 
-const authOptions: NextAuthOptions = {
+export const authOptions: NextAuthOptions = {
   providers: [
     TwitterProvider({
-      clientId: process.env.TWITTER_CLIENT_ID!,
-      clientSecret: process.env.TWITTER_CLIENT_SECRET!,
-      version: "2.0", // Use Twitter API v2
+      clientId: process.env.TWITTER_CLIENT_ID || '',
+      clientSecret: process.env.TWITTER_CLIENT_SECRET || '',
+      version: "2.0", // Use OAuth 2.0
     }),
   ],
   callbacks: {
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.sub!;
-        session.user.username = token.username as string || token.name || 'X User';
-      }
-      return session;
-    },
-    async jwt({ token, account, profile }) {
-      if (account && profile) {
-        // Store Twitter username in token
-        token.username = (profile as any).data?.username || (profile as any).username;
+    async jwt({ token, user, account }) {
+      if (account && user) {
+        token.id = user.id;
+        // Handle username safely
+        if ('username' in user && typeof user.username === 'string') {
+          token.username = user.username;
+        }
       }
       return token;
     },
-    async signIn({ user, account, profile }) {
-      console.log('Sign in attempt:', { 
-        provider: account?.provider, 
-        username: (profile as any)?.data?.username || (profile as any)?.username 
-      });
-      
-      // Save user to database
-      if (account?.provider === 'twitter' && profile) {
-        try {
-          const response = await fetch(`${process.env.NEXTAUTH_URL}/api/users/x-login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              twitterId: (profile as any).id,
-              username: (profile as any).data?.username || (profile as any).username,
-              name: (profile as any).name,
-              image: (profile as any).profile_image_url,
-              provider: 'twitter'
-            }),
-          });
-          
-          if (!response.ok) {
-            console.error('Failed to save user to database');
-          }
-        } catch (error) {
-          console.error('Error saving user to database:', error);
+    async session({ session, token }) {
+      if (token) {
+        session.user.id = token.id as string;
+        if (token.username) {
+          session.user.username = token.username as string;
         }
       }
-      
-      return true;
+      return session;
     },
   },
   pages: {
-    signIn: '/',
-    error: '/auth/error',
+    signIn: '/auth/signin',
   },
-  session: {
-    strategy: 'jwt',
-  },
+  // Ensure proper URL handling for local development
   secret: process.env.NEXTAUTH_SECRET,
-  debug: process.env.NODE_ENV === 'development',
 };
 
 const handler = NextAuth(authOptions);
+
 export { handler as GET, handler as POST };

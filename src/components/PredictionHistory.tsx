@@ -134,7 +134,7 @@ export function PredictionHistory({ predictions, currentPrice, onEditPrediction 
     return `${entry.predictedMin.toFixed(2)} - ${entry.predictedMax.toFixed(2)}`;
   };
 
-const isCurrentWeek = (prediction: Prediction) => {
+const isCurrentWeekPrediction = (prediction: Prediction) => {
   const now = new Date();
   const currentDay = now.getDay();
   const daysToMonday = currentDay === 0 ? 6 : currentDay - 1;
@@ -166,7 +166,7 @@ const isCurrentWeek = (prediction: Prediction) => {
 
   const canEdit = (prediction: Prediction) => {
     // Can only edit current week's prediction and only if it's not an old format
-    return isCurrentWeek(prediction) && 
+    return isCurrentWeekPrediction(prediction) && 
            prediction.predictedMin !== undefined && 
            prediction.predictedMax !== undefined &&
            !prediction.actualPrice; // Can't edit if results are already in
@@ -249,7 +249,7 @@ const isCurrentWeek = (prediction: Prediction) => {
     
     predictions.forEach(prediction => {
       // Only process current week predictions
-      if (!isCurrentWeek(prediction)) {
+      if (!isCurrentWeekPrediction(prediction)) {
         return;
       }
 
@@ -271,7 +271,7 @@ const isCurrentWeek = (prediction: Prediction) => {
         weekEnd: prediction.weekEndDate,
         prediction,
         historyEntries,
-        isCurrentWeek: isCurrentWeek(prediction),
+        isCurrentWeek: isCurrentWeekPrediction(prediction),
         actualPrice: prediction.actualPrice,
         isCorrect: prediction.isCorrect,
         score: prediction.score
@@ -284,189 +284,233 @@ const isCurrentWeek = (prediction: Prediction) => {
 
   const processedPredictions = processPredictionsWithHistory();
 
-  return (
-    <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-      <h2 className="text-2xl font-bold text-white mb-6">My Current Week Predictions</h2>
-      
-      {predictions.length === 0 ? (
+  if (predictions.length === 0) {
+    return (
+      <div className="bg-white apple-card rounded-2xl p-6 border border-gray-200">
+        <h2 className="text-2xl font-semibold text-gray-900 mb-4">Your Predictions</h2>
         <div className="text-center py-8">
-          <p className="text-gray-400 mb-4">No predictions for this week yet</p>
-          <p className="text-sm text-gray-500">
-            Make your first prediction for this week to see it here!
-          </p>
+          <div className="text-4xl mb-4">📊</div>
+          <p className="text-gray-500 font-medium">No predictions yet</p>
+          <p className="text-gray-400 text-sm mt-2">Make your first prediction to see it here</p>
         </div>
-      ) : (
-        <div className="space-y-6">
-          {processedPredictions.map((item, index) => (
-            <div key={item.prediction._id} className="bg-white/5 rounded-lg p-4 border border-white/10">
-                              <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-white">
-                    Week of {formatDate(item.weekStart)}
-                  </h3>
-                </div>
+      </div>
+    );
+  }
 
-              {/* Input History */}
-              <div className="mb-4">
-                <h4 className="text-sm font-semibold text-gray-300 mb-2">📝 Input History:</h4>
-                <div className="space-y-2">
-                  {item.historyEntries.map((historyEntry, historyIndex) => {
-                    const dayOfWeek = getDayOfWeek(historyEntry.createdAt);
-                    const multiplier = historyEntry.dayMultiplier;
-                                         const isLatest = historyIndex === 0; // First entry is now the latest since we sorted newest first
-                    
-                    return (
-                      <div 
-                        key={historyEntry.createdAt}
-                        className={`flex items-center justify-between p-2 rounded ${
-                          isLatest ? 'bg-blue-500/20 border border-blue-500/30' : 'bg-white/5'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="text-xs text-gray-400 min-w-[60px]">
-                            {dayOfWeek}
-                          </div>
-                          <div className="text-sm font-medium text-white">
-                            ${getHistoryEntryDisplay(historyEntry)}
-                          </div>
-                          <div className={`text-xs font-semibold ${getMultiplierColor(multiplier)}`}>
-                            {multiplier}×
-                          </div>
-                          {isLatest && (
-                            <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full">
-                              Latest
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-xs text-gray-400">
-                          {formatTime(historyEntry.createdAt)}
-                        </div>
-                      </div>
-                    );
-                  })}
+  return (
+    <div className="bg-white apple-card rounded-2xl p-6 border border-gray-200">
+      <h2 className="text-2xl font-semibold text-gray-900 mb-6">Your Predictions</h2>
+      
+      <div className="space-y-4">
+        {predictions.map((prediction) => {
+          const isCurrentWeek = isCurrentWeekPrediction(prediction);
+          const multiplier = getMultiplierForDay(prediction.createdAt);
+          const accuracy = getAccuracy(prediction, prediction.actualPrice);
+          
+          return (
+            <div
+              key={prediction._id}
+              className={`p-4 rounded-xl border transition-all ${
+                isCurrentWeek
+                  ? 'bg-blue-50 border-blue-200'
+                  : prediction.isCorrect
+                  ? 'bg-green-50 border-green-200'
+                  : prediction.actualPrice !== undefined
+                  ? 'bg-red-50 border-red-200'
+                  : 'bg-gray-50 border-gray-200'
+              }`}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-medium text-gray-900">
+                    Week of {formatDate(prediction.weekStartDate)}
+                  </span>
+                  {isCurrentWeek && (
+                    <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full font-medium">
+                      Current Week
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className={`text-sm font-semibold ${getMultiplierColor(multiplier)}`}>
+                    {multiplier}×
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {getDayOfWeek(prediction.createdAt)}
+                  </span>
                 </div>
               </div>
 
-              {/* Edit functionality for current week */}
-              {item.isCurrentWeek && canEdit(item.prediction) && (
-                <div className="mb-4">
+              {/* Prediction Details */}
+              <div className="grid grid-cols-2 gap-4 mb-3">
+                <div>
+                  <p className="text-sm text-gray-500 font-medium">Your Prediction</p>
+                  <p className="text-lg font-semibold text-gray-900">
+                    ${prediction.predictedMin?.toFixed(2) || prediction.predictedPrice?.toFixed(2)} - ${prediction.predictedMax?.toFixed(2) || prediction.predictedPrice?.toFixed(2)}
+                  </p>
+                </div>
+                
+                {prediction.actualPrice !== undefined ? (
+                  <div>
+                    <p className="text-sm text-gray-500 font-medium">Actual Price</p>
+                    <p className={`text-lg font-semibold ${
+                      prediction.isCorrect ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      ${prediction.actualPrice.toFixed(2)}
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-sm text-gray-500 font-medium">Current Price</p>
+                    <p className="text-lg font-semibold text-gray-900">
+                      ${currentPrice.toFixed(2)}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Status and Score */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  {prediction.actualPrice !== undefined ? (
+                    <div className="flex items-center space-x-2">
+                      <span className={`w-2 h-2 rounded-full ${
+                        prediction.isCorrect ? 'bg-green-500' : 'bg-red-500'
+                      }`}></span>
+                      <span className={`text-sm font-medium ${
+                        prediction.isCorrect ? 'text-green-700' : 'text-red-700'
+                      }`}>
+                        {prediction.isCorrect ? 'Correct' : 'Incorrect'}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-2">
+                      <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
+                      <span className="text-sm text-gray-600 font-medium">Pending</span>
+                    </div>
+                  )}
+                  
+                  {accuracy && (
+                    <span className="text-sm text-gray-500">
+                      Accuracy: {accuracy}%
+                    </span>
+                  )}
+                </div>
+                
+                {prediction.score !== undefined && (
+                  <div className="text-right">
+                    <p className="text-sm text-gray-500">Score</p>
+                    <p className="text-lg font-bold text-gray-900">
+                      {prediction.score} pts
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Edit Button for Current Week */}
+              {isCurrentWeek && (
+                <div className="mt-3 pt-3 border-t border-gray-200">
                   <button
-                    onClick={() => startEditing(item.prediction)}
-                    className="text-blue-400 hover:text-blue-300 text-sm transition-colors"
+                    onClick={() => {
+                      setEditingId(prediction._id);
+                      setEditMin(prediction.predictedMin?.toString() || prediction.predictedPrice?.toString() || '');
+                      setEditMax(prediction.predictedMax?.toString() || prediction.predictedPrice?.toString() || '');
+                      setEditMessage(null);
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors apple-button"
                   >
-                    Edit Latest Prediction
+                    Edit Prediction
                   </button>
                 </div>
               )}
 
-              {/* Edit Mode */}
-              {editingId === item.prediction._id && (
-                <div className="space-y-4 p-4 bg-white/10 rounded-lg border border-white/20">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-semibold text-white">Edit Prediction</h3>
-                    <button
-                      onClick={cancelEditing}
-                      className="text-gray-400 hover:text-white transition-colors"
-                    >
-                      ✕
-                    </button>
-                  </div>
+              {/* Edit Form */}
+              {editingId === prediction._id && (
+                <div className="mt-4 p-4 bg-white rounded-lg border border-gray-200">
+                  <h4 className="font-semibold text-gray-900 mb-3">Edit Prediction</h4>
                   
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">$</span>
-                      <input
-                        type="number"
-                        value={editMin}
-                        onChange={(e) => setEditMin(e.target.value)}
-                        placeholder="Min"
-                        step="0.01"
-                        min="0"
-                        className="w-full pl-8 pr-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                      <label className="block text-xs text-gray-400 mt-1">Minimum</label>
-                    </div>
-                    
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">$</span>
-                      <input
-                        type="number"
-                        value={editMax}
-                        onChange={(e) => setEditMax(e.target.value)}
-                        placeholder="Max"
-                        step="0.01"
-                        min="0"
-                        className="w-full pl-8 pr-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                      <label className="block text-xs text-gray-400 mt-1">Maximum</label>
-                    </div>
-                  </div>
-
                   {editMessage && (
-                    <div className={`p-3 rounded-lg text-sm ${
+                    <div className={`p-3 rounded-lg mb-3 ${
                       editMessage.type === 'success' 
-                        ? 'bg-green-500/20 border border-green-500/30 text-green-300' 
-                        : 'bg-red-500/20 border border-red-500/30 text-red-300'
+                        ? 'bg-green-50 border border-green-200 text-green-700' 
+                        : 'bg-red-50 border border-red-200 text-red-700'
                     }`}>
                       {editMessage.text}
                     </div>
                   )}
-
-                  <div className="flex gap-3">
+                  
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Min Price</label>
+                      <input
+                        type="number"
+                        value={editMin}
+                        onChange={(e) => setEditMin(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        step="0.01"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Max Price</label>
+                      <input
+                        type="number"
+                        value={editMax}
+                        onChange={(e) => setEditMax(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        step="0.01"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="flex space-x-3">
                     <button
-                      onClick={() => handleEditSubmit(item.prediction._id)}
+                      onClick={async () => {
+                        const min = parseFloat(editMin);
+                        const max = parseFloat(editMax);
+                        
+                        if (!min || !max || min >= max) {
+                          setEditMessage({ type: 'error', text: 'Please enter valid prices (min < max)' });
+                          return;
+                        }
+                        
+                        setEditLoading(true);
+                        const result = await onEditPrediction(prediction._id, { min, max });
+                        
+                        if (result.success) {
+                          setEditMessage({ type: 'success', text: 'Prediction updated successfully!' });
+                          setTimeout(() => {
+                            setEditingId(null);
+                            setEditMessage(null);
+                          }, 2000);
+                        } else {
+                          setEditMessage({ type: 'error', text: result.error || 'Failed to update prediction' });
+                        }
+                        
+                        setEditLoading(false);
+                      }}
                       disabled={editLoading}
-                      className="flex-1 bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 apple-button"
                     >
-                      {editLoading ? 'Updating...' : 'Update Prediction'}
+                      {editLoading ? 'Updating...' : 'Save Changes'}
                     </button>
+                    
                     <button
-                      onClick={cancelEditing}
-                      className="px-4 py-2 bg-white/10 text-white border border-white/20 rounded-lg hover:bg-white/20 transition-colors"
+                      onClick={() => {
+                        setEditingId(null);
+                        setEditMessage(null);
+                      }}
+                      className="px-4 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 transition-colors apple-button"
                     >
                       Cancel
                     </button>
                   </div>
                 </div>
               )}
-
-              {/* Results for completed weeks */}
-              {item.actualPrice && (
-                <div className="mt-4 pt-4 border-t border-white/10">
-                  <h4 className="text-sm font-semibold text-gray-300 mb-2">📊 Results:</h4>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-400">Actual Price:</span>
-                      <span className="text-white font-medium">
-                        ${item.actualPrice.toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-400">Status:</span>
-                      <span className={`font-medium ${getStatusColor(item.prediction)}`}>
-                        {getStatusText(item.prediction)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-400">Accuracy:</span>
-                      <span className="text-white font-medium">
-                        {getAccuracy(item.prediction, item.actualPrice)}% off
-                      </span>
-                    </div>
-                    {item.score !== null && item.score !== undefined && (
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-400">Final Score:</span>
-                        <span className={`font-medium ${item.score > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                          {item.score} points
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
-          ))}
-        </div>
-      )}
+          );
+        })}
+      </div>
     </div>
   );
 }

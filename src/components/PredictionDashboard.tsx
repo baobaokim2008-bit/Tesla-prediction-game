@@ -24,9 +24,9 @@ interface Props {
 function BellCurveChart({ predictions, currentPrice }: { predictions: Prediction[]; currentPrice: number }) {
   if (predictions.length === 0) {
     return (
-      <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-        <h3 className="text-lg font-semibold text-white mb-4">📊 Prediction Distribution</h3>
-        <p className="text-gray-400 text-center">No predictions available for visualization</p>
+      <div className="bg-white apple-card rounded-2xl p-6 border border-gray-200">
+        <h3 className="text-xl font-semibold text-gray-900 mb-4">📊 Prediction Distribution</h3>
+        <p className="text-gray-500 text-center">No predictions available for visualization</p>
       </div>
     );
   }
@@ -55,10 +55,10 @@ function BellCurveChart({ predictions, currentPrice }: { predictions: Prediction
 
   if (dataPoints.length === 0) {
     return (
-      <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-        <h3 className="text-lg font-semibold text-white mb-4">📊 Prediction Distribution</h3>
-        <p className="text-gray-400 text-center">No valid prediction data available</p>
-        <p className="text-gray-500 text-xs text-center mt-2">
+      <div className="bg-white apple-card rounded-2xl p-6 border border-gray-200">
+        <h3 className="text-xl font-semibold text-gray-900 mb-4">📊 Prediction Distribution</h3>
+        <p className="text-gray-500 text-center">No valid prediction data available</p>
+        <p className="text-gray-400 text-xs text-center mt-2">
           Predictions need valid min/max values to display the distribution
         </p>
       </div>
@@ -99,220 +99,127 @@ function BellCurveChart({ predictions, currentPrice }: { predictions: Prediction
       curve,
       username: point!.username,
       midpoint: point!.midpoint,
-      isCurrentPrice: currentPrice >= point!.min && currentPrice <= point!.max
+      range: point!.range
     };
   });
 
-  // Combine all bell curves
-  const combinedCurve = [];
-  for (let i = 0; i < numPoints; i++) {
-    const price = startPrice + i * priceStep;
-    const totalY = bellCurves.reduce((sum, bell) => sum + bell.curve[i].y, 0);
-    combinedCurve.push({ price, y: totalY });
-  }
-
-  // Find max height for scaling
-  const maxY = Math.max(...combinedCurve.map(p => p.y));
-
-  // Find the peak point (highest point) of the combined curve
-  const peakPoint = combinedCurve.reduce((max, point) => 
-    point.y > max.y ? point : max, combinedCurve[0]
-  );
-
-  // Safe values with fallbacks
-  const safeCurrentPrice = currentPrice || 0;
-  const safeStartPrice = startPrice || 0;
-  const safeEndPrice = endPrice || 0;
-  const safePeakPrice = peakPoint?.price || 0;
-  const safeAvgMidpoint = avgMidpoint || 0;
-  const safeStdDev = stdDev || 0;
-  const safeMinPrice = minPrice || 0;
-  const safeMaxPrice = maxPrice || 0;
+  // Find the maximum y value for scaling
+  const maxY = Math.max(...bellCurves.flatMap(bc => bc.curve.map(p => p.y)));
 
   return (
-    <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-      <h3 className="text-lg font-semibold text-white mb-4">📊 Prediction Distribution</h3>
+    <div className="bg-white apple-card rounded-2xl p-6 border border-gray-200">
+      <h3 className="text-xl font-semibold text-gray-900 mb-4">📊 Prediction Distribution</h3>
       
-      {/* Bell curve visualization */}
-      <div className="mb-6">
-        <div className="text-sm text-gray-300 mb-2">Combined Bell Curve Distribution:</div>
-        <div className="relative h-64 bg-white/5 rounded-lg p-4 overflow-hidden">
-          {/* SVG for bell curves */}
-          <svg 
-            width="100%" 
-            height="100%" 
-            viewBox={`0 0 ${numPoints} 100`}
-            className="absolute inset-0"
-          >
-            {/* Individual bell curves (semi-transparent) */}
-            {bellCurves.map((bell, index) => (
-              <g key={index}>
-                <path
-                  d={bell.curve.map((point, i) => {
-                    const x = (i / (numPoints - 1)) * 100;
-                    const y = 100 - (point.y / maxY) * 80; // Scale to 80% of height
-                    return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
-                  }).join(' ')}
-                  fill="none"
-                  stroke={bell.isCurrentPrice ? "#fbbf24" : "#60a5fa"}
-                  strokeWidth="1"
-                  opacity="0.3"
-                />
-              </g>
+      <div className="space-y-4">
+        {/* Statistics */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+            <p className="text-sm text-gray-500 font-medium">Average</p>
+            <p className="text-lg font-semibold text-gray-900">${avgMidpoint.toFixed(2)}</p>
+          </div>
+          <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+            <p className="text-sm text-gray-500 font-medium">Range</p>
+            <p className="text-lg font-semibold text-gray-900">${minPrice.toFixed(2)} - ${maxPrice.toFixed(2)}</p>
+          </div>
+          <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+            <p className="text-sm text-gray-500 font-medium">Std Dev</p>
+            <p className="text-lg font-semibold text-gray-900">${stdDev.toFixed(2)}</p>
+          </div>
+          <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+            <p className="text-sm text-gray-500 font-medium">Current</p>
+            <p className="text-lg font-semibold text-blue-600">${currentPrice.toFixed(2)}</p>
+          </div>
+        </div>
+
+        {/* Bell Curve Visualization */}
+        <div className="relative h-64 bg-gray-50 rounded-lg border border-gray-200 p-4">
+          <svg className="w-full h-full" viewBox={`0 0 ${numPoints} 100`} preserveAspectRatio="none">
+            {/* Grid lines */}
+            {[0, 25, 50, 75, 100].map(y => (
+              <line
+                key={y}
+                x1="0"
+                y1={y}
+                x2={numPoints}
+                y2={y}
+                stroke="#e5e7eb"
+                strokeWidth="0.5"
+              />
             ))}
             
-            {/* Combined bell curve (thick line) */}
-            <path
-              d={combinedCurve.map((point, i) => {
-                const x = (i / (numPoints - 1)) * 100;
-                const y = 100 - (point.y / maxY) * 80;
-                return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
-              }).join(' ')}
-              fill="none"
-              stroke="#ffffff"
-              strokeWidth="2"
-              opacity="0.8"
-            />
-            
-            {/* Peak point indicator (highest point) */}
-            <circle
-              cx={(combinedCurve.indexOf(peakPoint) / (numPoints - 1)) * 100}
-              cy={100 - (peakPoint.y / maxY) * 80}
-              r="3"
-              fill="#10b981"
-              stroke="#ffffff"
-              strokeWidth="1"
-            />
-            
-            {/* Peak point label */}
-            <text
-              x={(combinedCurve.indexOf(peakPoint) / (numPoints - 1)) * 100}
-              y={100 - (peakPoint.y / maxY) * 80 - 10}
-              fill="#10b981"
-              fontSize="8"
-              fontFamily="monospace"
-              textAnchor="middle"
-              fontWeight="bold"
-            >
-              Peak Prediction Price: ${safePeakPrice.toFixed(0)}
-            </text>
-            
-            {/* Current price indicator line */}
+            {/* Price labels */}
+            {[0, 0.25, 0.5, 0.75, 1].map((t, i) => {
+              const price = startPrice + t * totalRange;
+              const x = t * numPoints;
+              return (
+                <text
+                  key={i}
+                  x={x}
+                  y="95"
+                  fontSize="8"
+                  fill="#6b7280"
+                  textAnchor="middle"
+                >
+                  ${price.toFixed(0)}
+                </text>
+              );
+            })}
+
+            {/* Bell curves */}
+            {bellCurves.map((bellCurve, index) => {
+              const color = `hsl(${(index * 137.5) % 360}, 70%, 50%)`;
+              return (
+                <g key={index}>
+                  <path
+                    d={bellCurve.curve.map((point, i) => {
+                      const x = ((point.price - startPrice) / totalRange) * numPoints;
+                      const y = 100 - (point.y / maxY) * 80;
+                      return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
+                    }).join(' ')}
+                    stroke={color}
+                    strokeWidth="2"
+                    fill="none"
+                    opacity="0.7"
+                  />
+                  
+                  {/* Midpoint marker */}
+                  <circle
+                    cx={((bellCurve.midpoint - startPrice) / totalRange) * numPoints}
+                    cy={100 - (bellCurve.curve.find(p => Math.abs(p.price - bellCurve.midpoint) < priceStep)?.y || 0) / maxY * 80}
+                    r="3"
+                    fill={color}
+                  />
+                </g>
+              );
+            })}
+
+            {/* Current price line */}
             <line
-              x1={((safeCurrentPrice - safeStartPrice) / totalRange) * 100}
+              x1={((currentPrice - startPrice) / totalRange) * numPoints}
               y1="0"
-              x2={((safeCurrentPrice - safeStartPrice) / totalRange) * 100}
+              x2={((currentPrice - startPrice) / totalRange) * numPoints}
               y2="100"
-              stroke="#fbbf24"
+              stroke="#3b82f6"
               strokeWidth="2"
               strokeDasharray="5,5"
-              opacity="0.8"
             />
-            
-            {/* Price labels */}
-            <text
-              x="5"
-              y="95"
-              fill="#9ca3af"
-              fontSize="8"
-              fontFamily="monospace"
-            >
-              ${safeStartPrice.toFixed(0)}
-            </text>
-            <text
-              x="85"
-              y="95"
-              fill="#9ca3af"
-              fontSize="8"
-              fontFamily="monospace"
-              textAnchor="end"
-            >
-              ${safeEndPrice.toFixed(0)}
-            </text>
-            <text
-              x={((safeCurrentPrice - safeStartPrice) / totalRange) * 100}
-              y="15"
-              fill="#fbbf24"
-              fontSize="8"
-              fontFamily="monospace"
-              textAnchor="middle"
-            >
-              ${safeCurrentPrice.toFixed(0)}
-            </text>
           </svg>
         </div>
-      </div>
 
-      {/* Individual prediction ranges */}
-      <div className="mb-4 p-3 bg-white/5 rounded-lg">
-        <div className="text-sm text-gray-300 mb-2">Individual Predictions:</div>
-        <div className="space-y-1 max-h-32 overflow-y-auto">
-          {dataPoints.map((point, index) => {
-            const isCurrentPrice = safeCurrentPrice >= point!.min && safeCurrentPrice <= point!.max;
+        {/* Legend */}
+        <div className="flex flex-wrap gap-2">
+          {bellCurves.map((bellCurve, index) => {
+            const color = `hsl(${(index * 137.5) % 360}, 70%, 50%)`;
             return (
-              <div key={index} className="text-xs flex items-center gap-2">
-                <div 
-                  className={`w-3 h-3 rounded-full ${
-                    isCurrentPrice ? 'bg-yellow-400' : 'bg-blue-400'
-                  }`}
-                />
-                <span className="text-gray-400">
-                  {point!.username}: ${(point!.min || 0).toFixed(0)} - ${(point!.max || 0).toFixed(0)} 
-                  (mid: ${(point!.midpoint || 0).toFixed(0)})
-                </span>
+              <div key={index} className="flex items-center space-x-2">
+                <div
+                  className="w-3 h-3 rounded-full"
+                  style={{ backgroundColor: color }}
+                ></div>
+                <span className="text-sm text-gray-700">{bellCurve.username}</span>
               </div>
             );
           })}
-        </div>
-      </div>
-
-      {/* Statistics */}
-      <div className="grid grid-cols-2 gap-4 text-sm">
-        <div>
-          <div className="text-gray-400">Average Midpoint</div>
-          <div className="text-white font-semibold">${safeAvgMidpoint.toFixed(2)}</div>
-        </div>
-        <div>
-          <div className="text-gray-400">Peak Prediction Price</div>
-          <div className="text-green-400 font-semibold">${safePeakPrice.toFixed(2)}</div>
-        </div>
-        <div>
-          <div className="text-gray-400">Standard Deviation</div>
-          <div className="text-white font-semibold">${safeStdDev.toFixed(2)}</div>
-        </div>
-        <div>
-          <div className="text-gray-400">Current Price</div>
-          <div className="text-yellow-400 font-semibold">${safeCurrentPrice.toFixed(2)}</div>
-        </div>
-        <div>
-          <div className="text-gray-400">Price Range</div>
-          <div className="text-white font-semibold">${safeMinPrice.toFixed(2)} - ${safeMaxPrice.toFixed(2)}</div>
-        </div>
-        <div>
-          <div className="text-gray-400">Peak vs Current</div>
-          <div className={`font-semibold ${safePeakPrice > safeCurrentPrice ? 'text-green-400' : 'text-red-400'}`}>
-            {safePeakPrice > safeCurrentPrice ? '+' : ''}{(safePeakPrice - safeCurrentPrice).toFixed(2)}
-          </div>
-        </div>
-      </div>
-
-      {/* Legend */}
-      <div className="mt-3 flex items-center gap-4 text-xs">
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 bg-blue-400 rounded-full"></div>
-          <span className="text-gray-300">Predictions</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
-          <span className="text-gray-300">Current Price Range</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 bg-white rounded-full opacity-80"></div>
-          <span className="text-gray-300">Combined Distribution</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-          <span className="text-gray-300">Peak Prediction Price</span>
         </div>
       </div>
     </div>
@@ -460,44 +367,48 @@ export function PredictionDashboard({ currentPrice }: Props) {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-        <span className="ml-3 text-gray-300">Loading community predictions...</span>
+      <div className="bg-white apple-card rounded-2xl p-6 border border-gray-200">
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          <span className="ml-3 text-gray-600 font-medium">Loading community predictions...</span>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-center py-8 text-red-400">
-        <p>{error}</p>
-        <button
-          onClick={fetchAllPredictions}
-          className="mt-2 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          Try Again
-        </button>
+      <div className="bg-white apple-card rounded-2xl p-6 border border-gray-200">
+        <div className="text-center py-8">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={fetchAllPredictions}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors apple-button"
+          >
+            Try Again
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+    <div className="bg-white apple-card rounded-2xl p-6 border border-gray-200">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-white">Current Week Community Predictions</h2>
-          <div className="text-xs text-gray-400 mt-1">
+          <h2 className="text-2xl font-semibold text-gray-900">Current Week Community Predictions</h2>
+          <div className="text-sm text-gray-500 mt-1">
             Last updated: {lastRefresh.toLocaleTimeString()}
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <div className="text-sm text-gray-400">
+          <div className="text-sm text-gray-500">
             {allPredictions.length} predictions
           </div>
           <button
             onClick={fetchAllPredictions}
             disabled={loading}
-            className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 apple-button font-medium"
           >
             {loading ? 'Refreshing...' : 'Refresh'}
           </button>
@@ -508,8 +419,8 @@ export function PredictionDashboard({ currentPrice }: Props) {
       <BellCurveChart predictions={allPredictions} currentPrice={currentPrice} />
 
       {allPredictions.length === 0 ? (
-        <div className="text-center py-8 text-gray-400">
-          <p>No predictions for this week yet. Be the first to make a prediction!</p>
+        <div className="text-center py-8">
+          <p className="text-gray-500">No predictions for this week yet. Be the first to make a prediction!</p>
         </div>
       ) : (
         <div className="space-y-4 max-h-96 overflow-y-auto mt-6">
@@ -522,36 +433,42 @@ export function PredictionDashboard({ currentPrice }: Props) {
             const rangeWidth = getRangeWidth(prediction);
             
             return (
-              <div key={prediction._id} className="bg-white/5 rounded-lg p-4 border border-white/10">
+              <div key={prediction._id} className="p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-white">
+                    <span className="text-sm font-semibold text-gray-900">
                       {prediction.username}
                     </span>
-                    <span className={`text-xs px-2 py-1 rounded-full ${status.color} bg-white/10`}>
+                    <span className={`text-xs px-2 py-1 rounded-full ${
+                      status.status === 'in range' ? 'bg-green-100 text-green-700' :
+                      status.status === 'close to range' ? 'bg-yellow-100 text-yellow-700' :
+                      status.status === 'below range' ? 'bg-red-100 text-red-700' :
+                      status.status === 'above range' ? 'bg-green-100 text-green-700' :
+                      'bg-gray-100 text-gray-700'
+                    }`}>
                       {status.icon} {status.status}
                     </span>
                   </div>
-                  <span className="text-xs text-gray-400">
+                  <span className="text-xs text-gray-500">
                     {formatDate(prediction.createdAt)}
                   </span>
                 </div>
                 
                 <div className="flex justify-between items-center">
-                  <div className="text-lg font-bold text-white">
+                  <div className="text-lg font-bold text-gray-900">
                     ${getPredictionDisplay(prediction)}
                     {prediction.predictedMin !== undefined && prediction.predictedMax !== undefined && (
-                      <span className="text-xs text-gray-400 ml-2">
+                      <span className="text-xs text-gray-500 ml-2">
                         (${(rangeWidth || 0).toFixed(2)} range)
                       </span>
                     )}
                   </div>
-                  <div className={`text-sm ${difference >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  <div className={`text-sm ${difference >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                     {difference >= 0 ? '+' : ''}{(difference || 0).toFixed(2)} ({(percentage || 0) >= 0 ? '+' : ''}{(percentage || 0).toFixed(1)}%)
                   </div>
                 </div>
                 
-                <div className="text-xs text-gray-400 mt-1">
+                <div className="text-xs text-gray-500 mt-1">
                   vs Current: ${safeCurrentPrice.toFixed(2)}
                 </div>
               </div>
@@ -560,30 +477,30 @@ export function PredictionDashboard({ currentPrice }: Props) {
         </div>
       )}
 
-      <div className="mt-6 p-4 bg-blue-500/20 border border-blue-500/30 rounded-lg">
-        <h3 className="text-lg font-semibold text-blue-300 mb-2">📊 Prediction Stats</h3>
+      <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+        <h3 className="text-lg font-semibold text-blue-900 mb-2">📊 Prediction Stats</h3>
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <div className="text-gray-400">Average Mid-Point</div>
-            <div className="text-white font-semibold">
+            <div className="text-gray-600">Average Mid-Point</div>
+            <div className="text-gray-900 font-semibold">
               {allPredictions.length > 0 ? `$${((allPredictions.reduce((sum, p) => sum + getMidPoint(p), 0) / allPredictions.length) || 0).toFixed(2)}` : 'N/A'}
             </div>
           </div>
           <div>
-            <div className="text-gray-400">Most Bullish</div>
-            <div className="text-green-400 font-semibold">
+            <div className="text-gray-600">Most Bullish</div>
+            <div className="text-green-700 font-semibold">
               {allPredictions.length > 0 ? `$${(Math.max(...allPredictions.map(p => p.predictedMax || p.predictedPrice || 0)) || 0).toFixed(2)}` : 'N/A'}
             </div>
           </div>
           <div>
-            <div className="text-gray-400">Most Bearish</div>
-            <div className="text-red-400 font-semibold">
+            <div className="text-gray-600">Most Bearish</div>
+            <div className="text-red-700 font-semibold">
               {allPredictions.length > 0 ? `$${(Math.min(...allPredictions.map(p => p.predictedMin || p.predictedPrice || 0)) || 0).toFixed(2)}` : 'N/A'}
             </div>
           </div>
           <div>
-            <div className="text-gray-400">In Range</div>
-            <div className="text-white font-semibold">
+            <div className="text-gray-600">In Range</div>
+            <div className="text-gray-900 font-semibold">
               {allPredictions.filter(p => isInRange(p)).length} / {allPredictions.length}
             </div>
           </div>
