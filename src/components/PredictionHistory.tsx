@@ -164,7 +164,7 @@ const isCurrentWeek = (prediction: Prediction) => {
            prediction.predictedMax !== undefined &&
            !prediction.actualPrice; // Can't edit if results are already in
   };
-
+  
   const startEditing = (prediction: Prediction) => {
     if (prediction.predictedMin !== undefined && prediction.predictedMax !== undefined) {
       setEditingId(prediction._id);
