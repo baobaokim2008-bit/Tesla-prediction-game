@@ -52,27 +52,30 @@ export function PredictionForm({ onSubmit, currentPrice, userId, onEditPredictio
         weekStart.setDate(now.getDate() - daysToMonday);
         weekStart.setHours(0, 0, 0, 0);
 
-        const currentWeekPrediction = data.data.find((pred: Prediction) => {
-          const predictionDate = new Date(pred.weekStartDate);
-          return predictionDate.getTime() === weekStart.getTime();
-        });
+        const isCurrentWeek = (prediction: Prediction) => {
+  const now = new Date();
+  const currentDay = now.getDay();
+  const daysToMonday = currentDay === 0 ? 6 : currentDay - 1;
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - daysToMonday);
+  weekStart.setHours(0, 0, 0, 0);
 
-        if (currentWeekPrediction) {
-          setExistingPrediction(currentWeekPrediction);
-          // Don't automatically switch to edit mode - let user choose
-          setIsEditing(false);
-        } else {
-          setExistingPrediction(null);
-          setIsEditing(false);
-        }
-      } else {
-        setExistingPrediction(null);
-        setIsEditing(false);
-      }
-    } catch (err) {
-      console.error('Failed to check existing prediction:', err);
-    }
-  };
+  const predictionDate = new Date(prediction.weekStartDate);
+  
+  // More flexible comparison - check if dates are within same week
+  const predictionWeekStart = new Date(predictionDate);
+  predictionWeekStart.setHours(0, 0, 0, 0);
+  
+  const currentWeekStart = new Date(weekStart);
+  currentWeekStart.setHours(0, 0, 0, 0);
+  
+  // Calculate the difference in days
+  const diffTime = Math.abs(predictionWeekStart.getTime() - currentWeekStart.getTime());
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  // Consider it the same week if within 6 days
+  return diffDays <= 6;
+};
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
