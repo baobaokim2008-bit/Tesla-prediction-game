@@ -250,7 +250,13 @@ export default function Home() {
             stockData={stockData?.data} 
           />
 
-          {/* Prediction Form */}
+          {/* Market Catalysts - Moved to top for decision-making */}
+          <MarketCatalysts 
+            marketContext={stockData?.data?.marketContext}
+            isLoading={refreshingCatalysts}
+          />
+
+          {/* Prediction Form - After reading analysis */}
           <PredictionForm 
             currentPrice={currentPrice}
             onSubmit={handlePredictionSubmit}
@@ -272,12 +278,6 @@ export default function Home() {
 
           {/* Leaderboard */}
           <Leaderboard currentUserId={userId} />
-
-          {/* Market Catalysts */}
-          <MarketCatalysts 
-            marketContext={stockData?.data?.marketContext}
-            isLoading={refreshingCatalysts}
-          />
         </div>
       </main>
     </div>
