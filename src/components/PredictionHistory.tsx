@@ -132,7 +132,7 @@ export function PredictionHistory({ predictions, currentPrice, onEditPrediction 
     return `${entry.predictedMin.toFixed(2)} - ${entry.predictedMax.toFixed(2)}`;
   };
 
- const isCurrentWeek = (prediction: Prediction) => {
+const isCurrentWeek = (prediction: Prediction) => {
   const now = new Date();
   const currentDay = now.getDay();
   const daysToMonday = currentDay === 0 ? 6 : currentDay - 1;
