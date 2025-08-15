@@ -132,17 +132,30 @@ export function PredictionHistory({ predictions, currentPrice, onEditPrediction 
     return `${entry.predictedMin.toFixed(2)} - ${entry.predictedMax.toFixed(2)}`;
   };
 
-  const isCurrentWeek = (prediction: Prediction) => {
-    const now = new Date();
-    const currentDay = now.getDay();
-    const daysToMonday = currentDay === 0 ? 6 : currentDay - 1;
-    const weekStart = new Date(now);
-    weekStart.setDate(now.getDate() - daysToMonday);
-    weekStart.setHours(0, 0, 0, 0);
+ const isCurrentWeek = (prediction: Prediction) => {
+  const now = new Date();
+  const currentDay = now.getDay();
+  const daysToMonday = currentDay === 0 ? 6 : currentDay - 1;
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - daysToMonday);
+  weekStart.setHours(0, 0, 0, 0);
 
-    const predictionDate = new Date(prediction.weekStartDate);
-    return predictionDate.getTime() === weekStart.getTime();
-  };
+  const predictionDate = new Date(prediction.weekStartDate);
+  
+  // More flexible comparison - check if dates are within same week
+  const predictionWeekStart = new Date(predictionDate);
+  predictionWeekStart.setHours(0, 0, 0, 0);
+  
+  const currentWeekStart = new Date(weekStart);
+  currentWeekStart.setHours(0, 0, 0, 0);
+  
+  // Calculate the difference in days
+  const diffTime = Math.abs(predictionWeekStart.getTime() - currentWeekStart.getTime());
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  // Consider it the same week if within 6 days
+  return diffDays <= 6;
+};
 
   const canEdit = (prediction: Prediction) => {
     // Can only edit current week's prediction and only if it's not an old format
