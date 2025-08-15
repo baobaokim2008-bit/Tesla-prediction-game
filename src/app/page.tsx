@@ -1,3 +1,4 @@
+// src/app/page.tsx - Complete updated version
 'use client';
 
 import { PredictionForm } from '@/components/PredictionForm';
@@ -6,10 +7,12 @@ import { PredictionDashboard } from '@/components/PredictionDashboard';
 import { Leaderboard } from '@/components/Leaderboard';
 import { MarketCatalysts } from '@/components/MarketCatalysts';
 import { StockDataDisplay } from '@/components/StockDataDisplay';
-import { SimpleLoginForm } from '@/components/SimpleLoginForm';
+import { EnhancedLoginForm } from '@/components/EnhancedLoginForm';
 import { useState, useEffect } from 'react';
+import { useSession, signOut } from 'next-auth/react';
 
 export default function Home() {
+  const { data: session, status } = useSession();
   const [userId, setUserId] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
   const [currentPrice, setCurrentPrice] = useState<number>(0);
@@ -19,27 +22,26 @@ export default function Home() {
   const [refreshingCatalysts, setRefreshingCatalysts] = useState(false);
 
   useEffect(() => {
-    // Check for existing login
-    const savedUserId = localStorage.getItem('tesla_user_id');
-    const savedUsername = localStorage.getItem('tesla_username');
+    // Handle NextAuth session
+    if (status === 'loading') return; // Still loading
     
-    // Clean up old localStorage keys if they exist
-    const oldUserId = localStorage.getItem('userId');
-    const oldUsername = localStorage.getItem('username');
-    if (oldUserId && oldUsername) {
-      localStorage.removeItem('userId');
-      localStorage.removeItem('username');
-      console.log('Cleaned up old localStorage keys');
-    }
-    
-    if (savedUserId && savedUsername) {
-      setUserId(savedUserId);
-      setUsername(savedUsername);
-      console.log('Restored session for user:', savedUsername, 'ID:', savedUserId);
+    if (session?.user) {
+      // User signed in with X
+      setUserId(session.user.id!);
+      setUsername(session.user.username || session.user.name || 'X User');
+    } else {
+      // Check for guest login
+      const savedUserId = localStorage.getItem('tesla_user_id');
+      const savedUsername = localStorage.getItem('tesla_username');
+      
+      if (savedUserId && savedUsername) {
+        setUserId(savedUserId);
+        setUsername(savedUsername);
+      }
     }
     
     fetchStockData();
-  }, []);
+  }, [session, status]);
 
   useEffect(() => {
     if (userId) {
@@ -90,19 +92,28 @@ export default function Home() {
   const handleLogin = (newUserId: string, newUsername: string) => {
     setUserId(newUserId);
     setUsername(newUsername);
-    localStorage.setItem('tesla_user_id', newUserId);
-    localStorage.setItem('tesla_username', newUsername);
+    
+    // Save guest login data
+    if (newUserId.startsWith('guest_')) {
+      localStorage.setItem('tesla_user_id', newUserId);
+      localStorage.setItem('tesla_username', newUsername);
+    }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('tesla_user_id');
-    localStorage.removeItem('tesla_username');
+  const handleLogout = async () => {
+    if (session) {
+      // Sign out from NextAuth (X login)
+      await signOut({ redirect: false });
+    } else {
+      // Clear guest login
+      localStorage.removeItem('tesla_user_id');
+      localStorage.removeItem('tesla_username');
+    }
+    
     setUserId(null);
     setUsername(null);
     setPredictions([]);
   };
-
-
 
   const handlePredictionSubmit = async (predictedRange: { min: number; max: number }) => {
     if (!userId || !username) return { success: false, error: 'Not logged in' };
@@ -110,14 +121,13 @@ export default function Home() {
     try {
       const response = await fetch('/api/predictions', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId,
           username,
           predictedMin: predictedRange.min,
           predictedMax: predictedRange.max,
+          loginType: session ? 'twitter' : 'guest'
         }),
       });
 
@@ -136,16 +146,17 @@ export default function Home() {
   };
 
   const handleEditPrediction = async (predictionId: string, newRange: { min: number; max: number }) => {
+    if (!userId || !username) return { success: false, error: 'Not logged in' };
+
     try {
       const response = await fetch('/api/predictions', {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           predictionId,
           predictedMin: newRange.min,
           predictedMax: newRange.max,
+          loginType: session ? 'twitter' : 'guest'
         }),
       });
 
@@ -158,115 +169,115 @@ export default function Home() {
         return { success: false, error: data.error };
       }
     } catch (error) {
-      console.error('Error updating prediction:', error);
-      return { success: false, error: 'Failed to update prediction' };
+      console.error('Error editing prediction:', error);
+      return { success: false, error: 'Failed to edit prediction' };
     }
   };
 
-  if (loading) {
+  const shareToX = async (prediction: any) => {
+    const text = `🚀 Just predicted Tesla stock to be between $${prediction.predictedMin} - $${prediction.predictedMax} this week! Join the Tesla Prediction Game and compete with me! #Tesla #StockPrediction`;
+    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
+  };
+
+  if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        </div>
+        <div className="relative z-10 text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-500 mx-auto mb-4"></div>
+          <p className="text-purple-200 text-lg">Loading Tesla Prediction Game...</p>
+        </div>
       </div>
     );
   }
 
   if (!userId) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 flex items-center justify-center p-4">
-        <SimpleLoginForm onLogin={handleLogin} />
-      </div>
-    );
+    return <EnhancedLoginForm onLogin={handleLogin} />;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
-      {/* Header */}
-      <header className="bg-white/10 backdrop-blur-sm border-b border-white/20">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      <header className="relative bg-white/10 backdrop-blur-md border-b border-white/20 shadow-2xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <div>
-              <h1 className="text-2xl font-bold text-white">Tesla Prediction Game</h1>
-              <p className="text-sm text-gray-300">Welcome, {username}!</p>
+            <div className="flex items-center space-x-4">
+              <div className="bg-gradient-to-r from-red-500 to-purple-600 p-3 rounded-xl shadow-lg">
+                <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
+                  Tesla Prediction Game
+                </h1>
+                <div className="flex items-center space-x-2">
+                  <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                  <p className="text-sm text-purple-200">
+                    Welcome, {username}!
+                    {session && (
+                      <span className="ml-2 px-2 py-1 bg-blue-600/80 text-white text-xs rounded-full">
+                        X User
+                      </span>
+                    )}
+                  </p>
+                </div>
+              </div>
             </div>
-            <button
-              onClick={handleLogout}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            <button 
+              onClick={handleLogout} 
+              className="flex items-center space-x-2 px-4 py-2 bg-red-600/80 backdrop-blur-sm text-white rounded-lg hover:bg-red-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
             >
-              Logout
+              <span>Logout</span>
             </button>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-4">Tesla Prediction Game</h1>
-          <p className="text-xl text-gray-300 mb-2">Predict Tesla's stock price range for the week</p>
-          <p className="text-lg text-blue-300">Make predictions Monday through Thursday • Earlier predictions get higher multipliers!</p>
-        </div>
-        {/* Market Catalysts - Moved to top */}
-        {stockData?.data?.marketContext && (
-          <div>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold text-white">Market Catalysts</h2>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => fetchStockData(true)}
-                  disabled={refreshingCatalysts}
-                  className="px-3 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  {refreshingCatalysts ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      Refreshing...
-                    </>
-                  ) : (
-                    'Refresh Data'
-                  )}
-                </button>
-                <span className="text-xs text-gray-400">
-                  Last updated: {new Date().toLocaleTimeString()}
-                </span>
-              </div>
-            </div>
-            <MarketCatalysts marketContext={stockData.data.marketContext} isLoading={refreshingCatalysts} />
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
-          {/* Left Column */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Prediction Form */}
-            <PredictionForm
-              onSubmit={handlePredictionSubmit}
-              currentPrice={currentPrice}
-              userId={userId}
-              onEditPrediction={handleEditPrediction}
-            />
-
-            {/* Tesla Stock Display */}
-            {stockData?.data && <StockDataDisplay stockData={stockData.data} />}
-          </div>
-
-          {/* Right Column */}
-          <div className="space-y-8">
-            {/* Leaderboard */}
-            <Leaderboard currentUserId={userId} />
-
-            {/* User Predictions */}
-            <PredictionHistory
-              predictions={predictions}
-              currentPrice={currentPrice}
-              onEditPrediction={handleEditPrediction}
-            />
-          </div>
+      <main className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Animated Background Elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
         </div>
 
-        {/* Community Predictions Dashboard */}
-        <div className="mt-8">
-          <PredictionDashboard currentPrice={currentPrice} />
+        <div className="relative z-10 space-y-8">
+          {/* Stock Data Display */}
+          <StockDataDisplay 
+            stockData={stockData?.data} 
+          />
+
+          {/* Prediction Form */}
+          <PredictionForm 
+            currentPrice={currentPrice}
+            onSubmit={handlePredictionSubmit}
+            userId={userId}
+            onEditPrediction={handleEditPrediction}
+          />
+
+          {/* Prediction History */}
+          <PredictionHistory 
+            predictions={predictions}
+            currentPrice={currentPrice}
+            onEditPrediction={handleEditPrediction}
+          />
+
+          {/* Prediction Dashboard */}
+          <PredictionDashboard 
+            currentPrice={currentPrice}
+          />
+
+          {/* Leaderboard */}
+          <Leaderboard currentUserId={userId} />
+
+          {/* Market Catalysts */}
+          <MarketCatalysts 
+            marketContext={stockData?.data?.marketContext}
+            isLoading={refreshingCatalysts}
+          />
         </div>
       </main>
     </div>

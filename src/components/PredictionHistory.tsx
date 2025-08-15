@@ -36,6 +36,8 @@ export function PredictionHistory({ predictions, currentPrice, onEditPrediction 
   const [editLoading, setEditLoading] = useState(false);
   const [editMessage, setEditMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
@@ -140,8 +142,30 @@ export function PredictionHistory({ predictions, currentPrice, onEditPrediction 
     weekStart.setDate(now.getDate() - daysToMonday);
     weekStart.setHours(0, 0, 0, 0);
 
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6); // Sunday
+    weekEnd.setHours(23, 59, 59, 999);
+
     const predictionDate = new Date(prediction.weekStartDate);
-    return predictionDate.getTime() === weekStart.getTime();
+    
+    // More flexible comparison - check if dates are within same week
+    // Allow for timezone differences by comparing just the date parts
+    const predictionWeekStart = new Date(predictionDate);
+    predictionWeekStart.setHours(0, 0, 0, 0);
+    
+    const currentWeekStart = new Date(weekStart);
+    currentWeekStart.setHours(0, 0, 0, 0);
+    
+    // Calculate the difference in days
+    const diffTime = Math.abs(predictionWeekStart.getTime() - currentWeekStart.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    // Consider it the same week if within 6 days
+    const result = diffDays <= 6;
+    
+
+    
+    return result;
   };
 
   const canEdit = (prediction: Prediction) => {

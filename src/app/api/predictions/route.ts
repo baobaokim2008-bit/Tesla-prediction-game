@@ -172,8 +172,14 @@ export async function PUT(request: NextRequest) {
     weekStart.setDate(now.getDate() - daysToMonday);
     weekStart.setHours(0, 0, 0, 0);
 
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6); // Sunday
+    weekEnd.setHours(23, 59, 59, 999);
+
     const predictionDate = new Date(prediction.weekStartDate);
-    if (predictionDate.getTime() !== weekStart.getTime()) {
+    
+    // Check if prediction is within the current week range
+    if (predictionDate.getTime() < weekStart.getTime() || predictionDate.getTime() > weekEnd.getTime()) {
       return NextResponse.json(
         {
           success: false,

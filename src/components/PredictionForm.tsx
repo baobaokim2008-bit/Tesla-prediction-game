@@ -54,7 +54,20 @@ export function PredictionForm({ onSubmit, currentPrice, userId, onEditPredictio
 
         const currentWeekPrediction = data.data.find((pred: Prediction) => {
           const predictionDate = new Date(pred.weekStartDate);
-          return predictionDate.getTime() === weekStart.getTime();
+          
+          // More flexible comparison for timezone differences
+          const predictionWeekStart = new Date(predictionDate);
+          predictionWeekStart.setHours(0, 0, 0, 0);
+          
+          const currentWeekStart = new Date(weekStart);
+          currentWeekStart.setHours(0, 0, 0, 0);
+          
+          // Calculate the difference in days
+          const diffTime = Math.abs(predictionWeekStart.getTime() - currentWeekStart.getTime());
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          
+          // Consider it the same week if within 6 days
+          return diffDays <= 6;
         });
 
         if (currentWeekPrediction) {
@@ -118,8 +131,10 @@ export function PredictionForm({ onSubmit, currentPrice, userId, onEditPredictio
         setPredictedMin('');
         setPredictedMax('');
       }
-      // Refresh the existing prediction check
-      await checkExistingPrediction();
+      // Refresh the existing prediction check after a short delay to allow parent state to update
+      setTimeout(async () => {
+        await checkExistingPrediction();
+      }, 100);
     } else {
       setMessage({ type: 'error', text: result.error || 'Failed to submit prediction' });
     }

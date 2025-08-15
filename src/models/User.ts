@@ -13,12 +13,37 @@ const userSchema = new mongoose.Schema({
   },
   email: {
     type: String,
-    required: true,
-    unique: true
+    required: false, // Optional for X users
+    unique: true,
+    sparse: true // Allow multiple null values
   },
   password: {
     type: String,
-    required: true
+    required: false // Optional for X users
+  },
+  // X (Twitter) specific fields
+  twitterId: {
+    type: String,
+    required: false,
+    unique: true,
+    sparse: true
+  },
+  name: {
+    type: String,
+    required: false
+  },
+  image: {
+    type: String,
+    required: false
+  },
+  provider: {
+    type: String,
+    enum: ['guest', 'twitter'],
+    default: 'guest'
+  },
+  lastLogin: {
+    type: Date,
+    default: Date.now
   },
   createdAt: {
     type: Date,
