@@ -8,7 +8,11 @@ export async function POST(request: NextRequest) {
     
     const { userId, username, email, password } = await request.json();
     
+    console.log('Registration request received');
+    console.log('Request data:', { userId, username, email, password: '***' });
+    
     if (!userId || !username || !email || !password) {
+      console.log('Missing required fields');
       return NextResponse.json(
         { success: false, error: 'UserId, username, email, and password are required' },
         { status: 400 }
@@ -24,7 +28,14 @@ export async function POST(request: NextRequest) {
       ]
     });
 
+    console.log('Existing user check:', existingUser ? 'Found existing user' : 'No existing user');
+    
     if (existingUser) {
+      console.log('Existing user details:', { 
+        userId: existingUser.userId, 
+        username: existingUser.username, 
+        email: existingUser.email 
+      });
       return NextResponse.json({
         success: false,
         error: 'User already exists with this username, email, or ID'
@@ -32,6 +43,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create new user
+    console.log('Creating new user...');
     const newUser = new User({
       userId,
       username,
@@ -39,7 +51,9 @@ export async function POST(request: NextRequest) {
       password
     });
 
+    console.log('Saving user to database...');
     await newUser.save();
+    console.log('User saved successfully');
 
     return NextResponse.json({
       success: true,
@@ -53,8 +67,10 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error registering user:', error);
+    console.error('Error details:', error.message);
+    console.error('Error stack:', error.stack);
     return NextResponse.json(
-      { success: false, error: 'Failed to register user' },
+      { success: false, error: `Failed to register user: ${error.message}` },
       { status: 500 }
     );
   }
